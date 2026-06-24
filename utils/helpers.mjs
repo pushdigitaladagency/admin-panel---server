@@ -61,5 +61,25 @@ export const handleError = (res, error) => {
             error: 'Related record missing or still in use'
         });
     }
+    // Bad client input that reaches MySQL directly (e.g. a value outside an ENUM
+    // such as setting press_releases.status / events.publish_status to 'Archived',
+    // a value too long for the column, or the wrong type). MySQL raises these as
+    // DatabaseErrors; treat them as 400, not an unhandled 500.
+    if (error.name === 'SequelizeDatabaseError') {
+        const code = error.parent?.code ?? error.original?.code;
+        const errno = error.parent?.errno ?? error.original?.errno;
+        const BAD_INPUT_CODES = new Set([
+            'WARN_DATA_TRUNCATED',          // 1265 - value outside ENUM / wrong type
+            'ER_DATA_TOO_LONG',             // 1406 - value too long for column
+            'ER_TRUNCATED_WRONG_VALUE',     // 1292 - wrong value (e.g. bad date/number)
+            'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD', // 1366
+            'ER_WRONG_VALUE',
+            'ER_BAD_NULL_ERROR'             // 1048 - required column set to null
+        ]);
+        const BAD_INPUT_ERRNO = new Set([1265, 1406, 1292, 1366, 1048]);
+        if (BAD_INPUT_CODES.has(code) || BAD_INPUT_ERRNO.has(errno)) {
+            return res.status(400).json({ success: false, error: 'Invalid value for one or more fields' });
+        }
+    }
     return res.status(500).json({ success: false, error: 'Internal server error' });
 };

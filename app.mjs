@@ -7,7 +7,13 @@ dotenv.config();
 const app = express();
 
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    const healthCheck = {
+        name: 'API Gateway',
+        status: 'UP',
+        timestamp: new Date().toISOString(),
+        message: 'Health check passed'
+    };
+    res.json(healthCheck);
 });
 
 export default app;
