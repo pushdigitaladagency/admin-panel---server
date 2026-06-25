@@ -2,6 +2,7 @@ import { fn, col } from 'sequelize';
 import { Role, User, Permission, Module, RolePermission, sequelize } from '../model/index.mjs';
 import { crudController } from './crudFactory.mjs';
 import { handleError } from '../utils/helpers.mjs';
+import { logAction } from '../utils/actionLogger.mjs';
 
 const base = crudController(Role, {
     writable: ['name', 'code', 'description', 'status'],
@@ -60,6 +61,10 @@ const setRolePermissions = async (req, res) => {
             await RolePermission.bulkCreate(valid.map((pid) => ({ role_id: role.id, permission_id: pid })), { transaction: t });
         }
         await t.commit();
+        
+        // Log action
+        logAction(req, 'Updated Role Permissions', 'Role', role.id, { permissionIds: valid });
+        
         res.json({ success: true, data: valid });
     } catch (error) {
         await t.rollback();

@@ -26,7 +26,7 @@ const requirePermission = (moduleCode, action) => async (req, res, next) => {
         if (granted === 0) {
             return res.status(403).json({
                 success: false,
-                error: `Forbidden: missing '${action}' permission on '${moduleCode}'`
+                error: 'You do not have access to perform this action'
             });
         }
 

@@ -19,6 +19,8 @@ import GalleryAlbum from './galleryAlbum.model.mjs';
 import GalleryImage from './galleryImage.model.mjs';
 import GalleryVideo from './galleryVideo.model.mjs';
 import Enquiry from './enquiry.model.mjs';
+import Setting from './setting.model.mjs';
+import ActionLog from './actionLog.model.mjs';
 
 // --- RBAC: User <-> Role ---
 Role.hasMany(User, { foreignKey: 'role_id', as: 'users' });
@@ -63,6 +65,9 @@ GalleryImage.belongsTo(GalleryAlbum, { foreignKey: 'album_id', as: 'album' });
 Enquiry.belongsTo(User, { foreignKey: 'assigned_to', as: 'assignee' });
 Enquiry.belongsTo(User, { foreignKey: 'responded_by', as: 'responder' });
 
+// --- Action Logs ---
+ActionLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 export {
     sequelize,
     User, Role, Module, Permission, RolePermission,
@@ -70,5 +75,5 @@ export {
     NewsCategory, News, NewsGallery,
     EventType, Event,
     GalleryCategory, GalleryAlbum, GalleryImage, GalleryVideo,
-    Enquiry
+    Enquiry, Setting, ActionLog
 };

@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { pickFields, handleError, uniqueSlug } from '../utils/helpers.mjs';
+import { logAction } from '../utils/actionLogger.mjs';
 
 // Builds a consistent set of REST handlers for a model.
 //
@@ -42,22 +43,37 @@ export const crudController = (model, options = {}) => {
                 where[Op.or] = searchFields.map((f) => ({ [f]: { [Op.like]: `%${req.query.search}%` } }));
             }
 
-            const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-            const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+            const pageParam = req.query.page;
+            const limitParam = req.query.limit;
 
-            const { rows, count } = await model.findAndCountAll({
+            const queryOptions = {
                 ...findOptions(),
                 where,
                 order: defaultOrder,
-                limit,
-                offset: (page - 1) * limit,
                 distinct: true
-            });
+            };
+
+            let page = 1;
+            let limit = null;
+
+            if (pageParam !== undefined || limitParam !== undefined) {
+                page = Math.max(1, parseInt(pageParam, 10) || 1);
+                limit = Math.min(1000, Math.max(1, parseInt(limitParam, 10) || 20));
+                queryOptions.limit = limit;
+                queryOptions.offset = (page - 1) * limit;
+            }
+
+            const { rows, count } = await model.findAndCountAll(queryOptions);
 
             res.json({
                 success: true,
                 data: rows,
-                meta: { total: count, page, limit, pages: Math.ceil(count / limit) }
+                meta: {
+                    total: count,
+                    page,
+                    limit: limit || count,
+                    pages: limit ? Math.ceil(count / limit) : 1
+                }
             });
         } catch (error) {
             handleError(res, error);
@@ -84,6 +100,10 @@ export const crudController = (model, options = {}) => {
 
             const created = await model.create(data);
             const record = await model.findByPk(created.id, findOptions());
+            
+            // Log creation
+            logAction(req, `Created ${model.name}`, model.name, created.id, data);
+            
             res.status(201).json({ success: true, data: record });
         } catch (error) {
             handleError(res, error);
@@ -103,6 +123,10 @@ export const crudController = (model, options = {}) => {
 
             await record.update(data);
             const fresh = await model.findByPk(record.id, findOptions());
+            
+            // Log update
+            logAction(req, `Updated ${model.name}`, model.name, record.id, data);
+            
             res.json({ success: true, data: fresh });
         } catch (error) {
             handleError(res, error);
@@ -114,6 +138,10 @@ export const crudController = (model, options = {}) => {
             const record = await model.findByPk(req.params.id);
             if (!record) return res.status(404).json({ success: false, error: notFound });
             await record.destroy(); // soft delete when the model is paranoid
+            
+            // Log deletion
+            logAction(req, `Deleted ${model.name}`, model.name, record.id);
+            
             res.json({ success: true, message: 'Deleted successfully' });
         } catch (error) {
             handleError(res, error);

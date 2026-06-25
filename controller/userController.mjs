@@ -1,5 +1,6 @@
 import { User, Role } from '../model/index.mjs';
 import bcrypt from 'bcrypt';
+import { logAction } from '../utils/actionLogger.mjs';
 
 // Never expose the password hash in API responses.
 const PUBLIC_ATTRIBUTES = { exclude: ['password_hash'] };
@@ -85,6 +86,10 @@ export const createUser = async (req, res) => {
 
         // Re-fetch without the password hash for the response.
         const safeUser = await User.findByPk(newUser.id, { attributes: PUBLIC_ATTRIBUTES, include: [WITH_ROLE] });
+        
+        // Log action
+        logAction(req, 'Created User', 'User', newUser.id, { username: newUser.username, email: newUser.email });
+        
         res.status(201).json({ success: true, data: safeUser });
     } catch (error) {
         handleError(res, error);
@@ -110,6 +115,10 @@ export const updateUser = async (req, res) => {
         await user.update(updates);
 
         const safeUser = await User.findByPk(user.id, { attributes: PUBLIC_ATTRIBUTES, include: [WITH_ROLE] });
+        
+        // Log action
+        logAction(req, 'Updated User', 'User', user.id, updates);
+        
         res.json({ success: true, data: safeUser });
     } catch (error) {
         handleError(res, error);
@@ -124,6 +133,10 @@ export const deleteUser = async (req, res) => {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
         await user.destroy();
+        
+        // Log action
+        logAction(req, 'Deleted User', 'User', user.id);
+        
         res.json({ success: true, message: 'User deleted successfully' });
     } catch (error) {
         handleError(res, error);

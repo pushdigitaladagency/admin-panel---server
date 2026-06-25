@@ -1,5 +1,6 @@
 import { Enquiry, User } from '../model/index.mjs';
 import { handleError, referenceNo, pickFields } from '../utils/helpers.mjs';
+import { logAction } from '../utils/actionLogger.mjs';
 
 const ASSIGNEE = { model: User, as: 'assignee', attributes: ['id', 'first_name', 'last_name'] };
 const RESPONDER = { model: User, as: 'responder', attributes: ['id', 'first_name', 'last_name'] };
@@ -42,19 +43,38 @@ export const listEnquiries = async (req, res) => {
         const where = {};
         if (req.query.status) where.status = req.query.status;
 
-        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+        const pageParam = req.query.page;
+        const limitParam = req.query.limit;
 
-        const { rows, count } = await Enquiry.findAndCountAll({
+        const queryOptions = {
             where,
             include: [ASSIGNEE, RESPONDER],
             order: [['created_at', 'DESC']],
-            limit,
-            offset: (page - 1) * limit,
             distinct: true
-        });
+        };
 
-        res.json({ success: true, data: rows, meta: { total: count, page, limit, pages: Math.ceil(count / limit) } });
+        let page = 1;
+        let limit = null;
+
+        if (pageParam !== undefined || limitParam !== undefined) {
+            page = Math.max(1, parseInt(pageParam, 10) || 1);
+            limit = Math.min(1000, Math.max(1, parseInt(limitParam, 10) || 20));
+            queryOptions.limit = limit;
+            queryOptions.offset = (page - 1) * limit;
+        }
+
+        const { rows, count } = await Enquiry.findAndCountAll(queryOptions);
+
+        res.json({
+            success: true,
+            data: rows,
+            meta: {
+                total: count,
+                page,
+                limit: limit || count,
+                pages: limit ? Math.ceil(count / limit) : 1
+            }
+        });
     } catch (error) {
         handleError(res, error);
     }
@@ -87,6 +107,10 @@ export const updateEnquiry = async (req, res) => {
 
         await enquiry.update(updates);
         const fresh = await Enquiry.findByPk(enquiry.id, { include: [ASSIGNEE, RESPONDER] });
+        
+        // Log action
+        logAction(req, 'Updated Enquiry', 'Enquiry', enquiry.id, updates);
+        
         res.json({ success: true, data: fresh });
     } catch (error) {
         handleError(res, error);
@@ -99,6 +123,10 @@ export const removeEnquiry = async (req, res) => {
         const enquiry = await Enquiry.findByPk(req.params.id);
         if (!enquiry) return res.status(404).json({ success: false, error: 'Enquiry not found' });
         await enquiry.destroy();
+        
+        // Log action
+        logAction(req, 'Deleted Enquiry', 'Enquiry', enquiry.id);
+        
         res.json({ success: true, message: 'Enquiry deleted' });
     } catch (error) {
         handleError(res, error);

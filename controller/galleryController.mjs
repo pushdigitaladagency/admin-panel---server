@@ -6,7 +6,7 @@ const IMAGE_FIELDS = ['image_path', 'image_title', 'caption', 'alt_text', 'displ
 
 const CATEGORY = { model: GalleryCategory, as: 'category', attributes: ['id', 'name', 'slug'] };
 const EVENT = { model: Event, as: 'event', attributes: ['id', 'title'] };
-const IMAGES = { model: GalleryImage, as: 'images', attributes: ['id', 'image_path', 'image_title', 'caption', 'alt_text', 'display_order', 'status'] };
+const IMAGES = { model: GalleryImage, as: 'images', attributes: ['id', 'album_id', 'image_path', 'image_title', 'caption', 'alt_text', 'display_order', 'status', 'created_at', 'updated_at'] };
 
 // --- Categories ---
 export const galleryCategoryController = crudController(GalleryCategory, {

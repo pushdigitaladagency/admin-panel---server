@@ -9,6 +9,9 @@ import eventRoutes from './event.routes.mjs';
 import galleryRoutes from './gallery.routes.mjs';
 import enquiryRoutes from './enquiry.routes.mjs';
 import uploadRoutes from './upload.routes.mjs';
+import settingRoutes from './setting.routes.mjs';
+import actionLogRoutes from './actionLog.routes.mjs';
+import { getStats, getRecent } from '../controller/dashboardController.mjs';
 
 const router = express.Router();
 
@@ -25,5 +28,12 @@ router.use('/api', pressReleaseRoutes);
 router.use('/api', newsRoutes);
 router.use('/api', eventRoutes);
 router.use('/api', galleryRoutes);
+router.use('/api', settingRoutes);
+router.use('/api', actionLogRoutes);
+
+// Dashboard (aggregates, requires auth)
+router.get('/api/dashboard/stats', getStats);
+router.get('/api/dashboard/recent', getRecent);
 
 export default router;
+
