@@ -8,7 +8,7 @@ const Event = sequelize.define(
         slug: { type: DataTypes.STRING(255), allowNull: false, unique: true },
         title: { type: DataTypes.STRING(150), allowNull: false },
         event_type_id: { type: DataTypes.BIGINT.UNSIGNED },
-        short_description: { type: DataTypes.STRING(500), allowNull: false },
+        short_description: { type: DataTypes.TEXT, allowNull: false },
         description: { type: DataTypes.TEXT('long'), allowNull: false },
         banner_image: { type: DataTypes.STRING(500) },
         event_start_date: { type: DataTypes.DATE, allowNull: false },
