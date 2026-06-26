@@ -4,7 +4,8 @@ import {
     pressReleaseCategoryController as cat,
     publish, unpublish
 } from '../controller/pressReleaseController.mjs';
-import requirePermission from '../middleware/permission.mjs';
+import requirePermission, { requirePublishToChangeStatus, requirePublishToSetStatus } from '../middleware/permission.mjs';
+import { PressRelease } from '../model/index.mjs';
 
 const router = express.Router();
 const can = (action) => requirePermission('press_releases', action);
@@ -20,8 +21,8 @@ router.delete('/press-release-categories/:id', can('delete'), cat.remove);
 // Press releases
 router.get('/press-releases', can('view'), ctrl.list);
 router.get('/press-releases/:id', can('view'), ctrl.getById);
-router.post('/press-releases', can('create'), ctrl.create);
-router.put('/press-releases/:id', can('edit'), ctrl.update);
+router.post('/press-releases', can('create'), requirePublishToSetStatus('status', 'press_releases'), ctrl.create);
+router.put('/press-releases/:id', can('edit'), requirePublishToChangeStatus(PressRelease, 'status', 'press_releases'), ctrl.update);
 router.delete('/press-releases/:id', can('delete'), ctrl.remove);
 router.patch('/press-releases/:id/publish', can('publish'), publish);
 router.patch('/press-releases/:id/unpublish', can('publish'), unpublish);

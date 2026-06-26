@@ -5,7 +5,8 @@ import {
     publish, unpublish, archive,
     listNewsGallery, addNewsGallery, removeNewsGallery
 } from '../controller/newsController.mjs';
-import requirePermission from '../middleware/permission.mjs';
+import requirePermission, { requirePublishToChangeStatus, requirePublishToSetStatus } from '../middleware/permission.mjs';
+import { News } from '../model/index.mjs';
 
 const router = express.Router();
 const can = (action) => requirePermission('news', action);
@@ -26,8 +27,8 @@ router.delete('/news/gallery/:imageId', can('edit'), removeNewsGallery);
 // News articles
 router.get('/news', can('view'), ctrl.list);
 router.get('/news/:id', can('view'), ctrl.getById);
-router.post('/news', can('create'), ctrl.create);
-router.put('/news/:id', can('edit'), ctrl.update);
+router.post('/news', can('create'), requirePublishToSetStatus('status', 'news'), ctrl.create);
+router.put('/news/:id', can('edit'), requirePublishToChangeStatus(News, 'status', 'news'), ctrl.update);
 router.delete('/news/:id', can('delete'), ctrl.remove);
 router.patch('/news/:id/publish', can('publish'), publish);
 router.patch('/news/:id/unpublish', can('publish'), unpublish);

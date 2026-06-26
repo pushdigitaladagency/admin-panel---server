@@ -36,4 +36,32 @@ const requirePermission = (moduleCode, action) => async (req, res, next) => {
     }
 };
 
+// Publish-state is a writable field on the generic create/edit routes (guarded only
+// by 'create'/'edit'), so without these guards an edit-only user could publish by
+// simply editing. These enforce the 'publish' permission whenever the status field
+// is actually being changed, no matter which endpoint sets it.
+
+// For UPDATE (PUT): require 'publish' only if the incoming status differs from the
+// stored value — plain edits that leave the status alone still need only 'edit'.
+export const requirePublishToChangeStatus = (Model, statusField, moduleCode) => async (req, res, next) => {
+    try {
+        const incoming = req.body[statusField];
+        if (incoming === undefined) return next();
+        const record = await Model.findByPk(req.params.id, { attributes: ['id', statusField] });
+        if (!record) return next(); // let the controller return its 404
+        if (String(record[statusField]) === String(incoming)) return next(); // unchanged
+        return requirePermission(moduleCode, 'publish')(req, res, next);
+    } catch (error) {
+        return res.status(500).json({ success: false, error: 'Permission check failed' });
+    }
+};
+
+// For CREATE (POST): require 'publish' if the new record is given a non-default
+// (e.g. 'Published') status. Creating a Draft needs only 'create'.
+export const requirePublishToSetStatus = (statusField, moduleCode, defaultValue = 'Draft') => (req, res, next) => {
+    const incoming = req.body[statusField];
+    if (incoming === undefined || String(incoming) === String(defaultValue)) return next();
+    return requirePermission(moduleCode, 'publish')(req, res, next);
+};
+
 export default requirePermission;
