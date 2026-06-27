@@ -100,9 +100,16 @@ export const updateEnquiry = async (req, res) => {
         const updates = pickFields(req.body, WORKFLOW_FIELDS);
 
         // When marked Responded, stamp who/when if not explicitly supplied.
+        // The admin client always sends response_date (as null when the picker is
+        // empty), so treat null/'' the same as "not supplied" — otherwise an
+        // enquiry could be marked Responded with no response date.
         if (updates.status === 'Responded') {
-            if (updates.responded_by === undefined) updates.responded_by = req.user?.id ?? null;
-            if (updates.response_date === undefined) updates.response_date = new Date();
+            if (updates.responded_by === undefined || updates.responded_by === null) {
+                updates.responded_by = req.user?.id ?? null;
+            }
+            if (updates.response_date === undefined || updates.response_date === null || updates.response_date === '') {
+                updates.response_date = new Date();
+            }
         }
 
         await enquiry.update(updates);
