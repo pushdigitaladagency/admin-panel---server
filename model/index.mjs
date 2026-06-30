@@ -21,6 +21,14 @@ import GalleryVideo from './galleryVideo.model.mjs';
 import Enquiry from './enquiry.model.mjs';
 import Setting from './setting.model.mjs';
 import ActionLog from './actionLog.model.mjs';
+import CareerPost from './careerPost.model.mjs';
+import CareerApplication from './careerApplication.model.mjs';
+import Certificate from './certificate.model.mjs';
+import ClientPartnerLogo from './clientPartnerLogo.model.mjs';
+import InvestorCategory from './investorCategory.model.mjs';
+import InvestorDocument from './investorDocument.model.mjs';
+import MetaMapping from './metaMapping.model.mjs';
+import GlobalSetting from './globalSetting.model.mjs';
 
 // --- RBAC: User <-> Role ---
 Role.hasMany(User, { foreignKey: 'role_id', as: 'users' });
@@ -68,6 +76,10 @@ Enquiry.belongsTo(User, { foreignKey: 'responded_by', as: 'responder' });
 // --- Action Logs ---
 ActionLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// --- Investors (categories own documents) ---
+InvestorCategory.hasMany(InvestorDocument, { foreignKey: 'category_id', as: 'documents' });
+InvestorDocument.belongsTo(InvestorCategory, { foreignKey: 'category_id', as: 'category' });
+
 export {
     sequelize,
     User, Role, Module, Permission, RolePermission,
@@ -75,5 +87,7 @@ export {
     NewsCategory, News, NewsGallery,
     EventType, Event,
     GalleryCategory, GalleryAlbum, GalleryImage, GalleryVideo,
-    Enquiry, Setting, ActionLog
+    Enquiry, Setting, ActionLog,
+    CareerPost, CareerApplication, Certificate, ClientPartnerLogo,
+    InvestorCategory, InvestorDocument, MetaMapping, GlobalSetting
 };

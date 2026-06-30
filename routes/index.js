@@ -11,6 +11,12 @@ import enquiryRoutes from './enquiry.routes.mjs';
 import uploadRoutes from './upload.routes.mjs';
 import settingRoutes from './setting.routes.mjs';
 import actionLogRoutes from './actionLog.routes.mjs';
+import careersRoutes from './careers.routes.mjs';
+import certificateRoutes from './certificate.routes.mjs';
+import clientPartnerLogoRoutes from './clientPartnerLogo.routes.mjs';
+import investorRoutes from './investor.routes.mjs';
+import metaMappingRoutes from './metaMapping.routes.mjs';
+import globalSettingRoutes from './globalSetting.routes.mjs';
 import { getStats, getRecent } from '../controller/dashboardController.mjs';
 
 const router = express.Router();
@@ -30,6 +36,12 @@ router.use('/api', eventRoutes);
 router.use('/api', galleryRoutes);
 router.use('/api', settingRoutes);
 router.use('/api', actionLogRoutes);
+router.use('/api', careersRoutes);
+router.use('/api', certificateRoutes);
+router.use('/api', clientPartnerLogoRoutes);
+router.use('/api', investorRoutes);
+router.use('/api', metaMappingRoutes);
+router.use('/api', globalSettingRoutes);
 
 // Dashboard (aggregates, requires auth)
 router.get('/api/dashboard/stats', getStats);
