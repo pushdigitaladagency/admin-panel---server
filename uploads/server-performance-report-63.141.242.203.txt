@@ -1,0 +1,197 @@
+================================================================================
+SERVER PERFORMANCE REPORT
+================================================================================
+
+Server IP       : 63.141.242.203
+Hostname        : 63-141-242-203.unisonserver.com
+Provider        : Cube Host India (VPS)
+Client          : Push Digital Agency (Ram)
+Report Date     : 29 June 2026
+Prepared By     : Cube Host India Technical Team
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+We investigated the reported intermittent slowness on VPS 63.141.242.203.
+At the time of inspection, the server was online and responding normally with
+low CPU load and fast website response times.
+
+The intermittent slowness is primarily caused by MEMORY PRESSURE on the VPS.
+The server is running multiple Node.js applications, MySQL, and Nginx on a
+3.6 GB RAM plan. Under load or during deployments, the system uses swap
+(disk-based memory), which causes noticeable slowdowns until memory is freed.
+
+There is no evidence of a persistent hardware, network, or disk issue from
+the hosting provider side at the time of this review.
+
+================================================================================
+SERVER SPECIFICATIONS
+================================================================================
+
+Operating System : AlmaLinux
+CPU Cores        : 4
+Total RAM        : 3.6 GB
+Swap             : 3.9 GB
+Disk             : 75 GB (9.1 GB used — 13%)
+Uptime           : 22+ days (stable, no unexpected reboots)
+
+================================================================================
+CURRENT STATUS (AT TIME OF CHECK)
+================================================================================
+
+CPU Load Average : 0.18 (normal for 4 cores)
+CPU Utilization  : ~97% idle
+Disk Usage       : 13% — healthy
+Website Response : organicheritage.store responded in ~80 ms (HTTP 200)
+                   Direct IP response in ~3 ms (HTTP 200)
+
+Conclusion: Server is healthy at rest. Slowness occurs intermittently when
+resources are stressed, not continuously.
+
+================================================================================
+APPLICATIONS RUNNING ON THIS VPS
+================================================================================
+
+The following Push Digital Agency applications are hosted on this server:
+
+  1. Organic Heritage (main website)
+     - Path   : /root/organic.store
+     - Port   : 3000
+     - Domain : organicheritage.store
+
+  2. Cosmetics
+     - Path   : /root/cosmetics
+     - Port   : 3001
+     - Access : http://63.141.242.203/cosmetics/
+
+  3. Grains
+     - Path   : /root/grains
+     - Port   : 3002
+     - Access : https://organicheritage.store/grains
+
+  4. Admin Dashboard (client)
+     - Path   : /root/admin-dashboard-client
+
+  5. Admin Dashboard (server/API)
+     - Path   : /root/admin-dashboard-server
+     - Port   : 6001
+
+Supporting services:
+  - Nginx (reverse proxy, SSL via Let's Encrypt)
+  - MySQL database
+  - PM2 (process manager)
+  - Webmin (server control panel)
+
+================================================================================
+ROOT CAUSE ANALYSIS
+================================================================================
+
+1. MEMORY PRESSURE (PRIMARY CAUSE)
+   --------------------------------
+   - Total application memory usage: ~2.1 GB RSS (resident memory)
+   - Free RAM at check time: ~278 MB
+   - Swap in use: ~804 MB (out of 3.9 GB)
+
+   When RAM is exhausted, Linux moves data to swap on disk. Disk is much
+   slower than RAM, so the entire server feels sluggish during these periods.
+   This matches the reported "slow at times" behaviour.
+
+   Memory breakdown (approximate):
+     MySQL                          ~333 MB
+     4x Next.js applications        ~460 MB
+     Admin dashboard API            ~140 MB
+     PM2, Nginx, Webmin, system     ~200+ MB
+
+   Running 5 Node.js apps + MySQL on 3.6 GB RAM is tight for production.
+
+2. APPLICATION INSTABILITY (SECONDARY)
+   ------------------------------------
+   PM2 process manager restart counts:
+
+     admin-dashboard-client : 47 restarts
+     cosmetics              : 33 restarts
+     grains                 : 13 restarts
+     organicheritage        : 10 restarts
+
+   On 25 June 2026, admin-dashboard-client entered a crash loop due to a
+   missing production build (.next directory). PM2 stopped the app after
+   16 unstable restarts. Such events cause brief downtime or slow responses
+   during recovery.
+
+3. BOT / SCANNER TRAFFIC (CONTRIBUTING FACTOR)
+   ---------------------------------------------
+   Error logs show repeated automated probes hitting Next.js endpoints:
+
+     organicheritage-error.log : 3,665+ error entries
+     cosmetics-error.log       : 1,492+ error entries
+
+   Common error: "Failed to find Server Action" — typical of bots scanning
+   for vulnerabilities. This adds CPU and disk I/O load, especially when
+   memory is already constrained.
+
+================================================================================
+WHAT IS NOT THE PROBLEM
+================================================================================
+
+  [OK] Disk space — plenty available (87% free)
+  [OK] CPU hypervisor steal — 0% (no host-level CPU contention detected)
+  [OK] Nginx configuration — sites proxy correctly to backend apps
+  [OK] SSL certificates — active for organicheritage.store
+  [OK] Persistent high load — load average was low at time of check
+  [OK] Server uptime — stable for 22+ days
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+IMMEDIATE (HIGH PRIORITY)
+-------------------------
+  1. Upgrade VPS RAM to 8 GB
+     This is the most effective fix for the current workload. Five Node.js
+     apps plus MySQL need more headroom than 3.6 GB provides.
+
+  2. Ensure production builds before restarts
+     Always run "npm run build" before restarting Next.js apps via PM2.
+     Prevents crash loops like the one seen on 25 June 2026.
+
+SHORT TERM
+----------
+  3. Add Nginx rate limiting for bot/scanner traffic
+     Reduces unnecessary load from automated probes.
+
+  4. Set up swap and memory monitoring with alerts
+     Notify when swap usage exceeds 500 MB so issues are caught early.
+
+  5. Review PM2 restart policies
+     Configure memory limits and graceful restart to avoid crash loops.
+
+LONG TERM (OPTIONAL)
+--------------------
+  6. Split applications across two VPS instances
+     Example:
+       VPS 1 — Public websites (organicheritage, cosmetics, grains)
+       VPS 2 — Admin panel + MySQL database
+
+  7. Consider a managed database or dedicated DB server
+     Offloads MySQL memory usage from the application server.
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The VPS hardware and network are functioning correctly. The intermittent
+slowness is caused by the server running more applications than its current
+3.6 GB RAM can comfortably support. When memory fills up, swap usage
+increases and the server becomes slow until load decreases.
+
+We recommend upgrading to 8 GB RAM as the primary solution. Additional
+measures (rate limiting, monitoring, build discipline) will further improve
+stability.
+
+If you have questions or would like assistance implementing any of the
+recommendations above, please contact Cube Host India support.
+
+================================================================================
+END OF REPORT
+================================================================================
